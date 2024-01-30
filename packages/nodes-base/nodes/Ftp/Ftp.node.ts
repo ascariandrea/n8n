@@ -19,6 +19,7 @@ import type {
 import { file as tmpFile } from 'tmp-promise';
 
 import ftpClient from 'promise-ftp';
+import ssh2 from 'ssh2';
 import sftpClient from 'ssh2-sftp-client';
 import { formatPrivateKey } from '@utils/utilities';
 
@@ -469,22 +470,54 @@ export class Ftp implements INodeType {
 				const credentials = credential.data as ICredentialDataDecryptedObject;
 				try {
 					const sftp = new sftpClient();
+
+					//build algorithms options
+					let setAlgorithm = credentials.setKeyExchange || credentials.setCompression || credentials.setCipher || credentials.setHostAlgorithm || credentials.setMAC
+					let algorithms: any = {}
+					if (credentials.setKeyExchange) algorithms.kex = [credentials.kex as ssh2.KexAlgorithm];
+					if (credentials.setCompression) algorithms.compress = [credentials.compress as ssh2.CompressionAlgorithm];
+					if (credentials.setCipher) algorithms.cipher = [credentials.cipher as ssh2.CipherAlgorithm];
+					if (credentials.setHostAlgorithm) algorithms.serverHostKey = [credentials.serverHostKey as ssh2.ServerHostKeyAlgorithm];
+					if (credentials.setMAC) algorithms.hmac = [credentials.hmac as ssh2.MacAlgorithm];
+
 					if (credentials.privateKey) {
-						await sftp.connect({
-							host: credentials.host as string,
-							port: credentials.port as number,
-							username: credentials.username as string,
-							password: (credentials.password as string) || undefined,
-							privateKey: formatPrivateKey(credentials.privateKey as string),
-							passphrase: credentials.passphrase as string | undefined,
-						});
+						if (setAlgorithm) {
+							await sftp.connect({
+								host: credentials.host as string,
+								port: credentials.port as number,
+								username: credentials.username as string,
+								password: (credentials.password as string) || undefined,
+								privateKey: formatPrivateKey(credentials.privateKey as string),
+								passphrase: credentials.passphrase as string | undefined,
+								algorithms,
+							});
+						} else {
+							await sftp.connect({
+								host: credentials.host as string,
+								port: credentials.port as number,
+								username: credentials.username as string,
+								password: (credentials.password as string) || undefined,
+								privateKey: formatPrivateKey(credentials.privateKey as string),
+								passphrase: credentials.passphrase as string | undefined,
+							});
+						}
 					} else {
-						await sftp.connect({
-							host: credentials.host as string,
-							port: credentials.port as number,
-							username: credentials.username as string,
-							password: credentials.password as string,
-						});
+						if (setAlgorithm) {
+							await sftp.connect({
+								host: credentials.host as string,
+								port: credentials.port as number,
+								username: credentials.username as string,
+								password: credentials.password as string,
+								algorithms,
+							});
+						} else {
+							await sftp.connect({
+								host: credentials.host as string,
+								port: credentials.port as number,
+								username: credentials.username as string,
+								password: credentials.password as string,
+							});
+						}
 					}
 				} catch (error) {
 					return {
@@ -519,24 +552,56 @@ export class Ftp implements INodeType {
 			let ftp: ftpClient;
 			let sftp: sftpClient;
 
+			//build algorithms options
+			let setAlgorithm = credentials.setKeyExchange || credentials.setCompression || credentials.setCipher || credentials.setHostAlgorithm || credentials.setMAC
+			let algorithms: any = {}
+			if (credentials.setKeyExchange) algorithms.kex = [credentials.kex as ssh2.KexAlgorithm];
+			if (credentials.setCompression) algorithms.compress = [credentials.compress as ssh2.CompressionAlgorithm];
+			if (credentials.setCipher) algorithms.cipher = [credentials.cipher as ssh2.CipherAlgorithm];
+			if (credentials.setHostAlgorithm) algorithms.serverHostKey = [credentials.serverHostKey as ssh2.ServerHostKeyAlgorithm];
+			if (credentials.setMAC) algorithms.hmac = [credentials.hmac as ssh2.MacAlgorithm];
+
 			if (protocol === 'sftp') {
 				sftp = new sftpClient();
+
 				if (credentials.privateKey) {
-					await sftp.connect({
-						host: credentials.host as string,
-						port: credentials.port as number,
-						username: credentials.username as string,
-						password: (credentials.password as string) || undefined,
-						privateKey: formatPrivateKey(credentials.privateKey as string),
-						passphrase: credentials.passphrase as string | undefined,
-					});
+					if (setAlgorithm) {
+						await sftp.connect({
+							host: credentials.host as string,
+							port: credentials.port as number,
+							username: credentials.username as string,
+							password: (credentials.password as string) || undefined,
+							privateKey: formatPrivateKey(credentials.privateKey as string),
+							passphrase: credentials.passphrase as string | undefined,
+							algorithms,
+						});
+					} else {
+						await sftp.connect({
+							host: credentials.host as string,
+							port: credentials.port as number,
+							username: credentials.username as string,
+							password: (credentials.password as string) || undefined,
+							privateKey: formatPrivateKey(credentials.privateKey as string),
+							passphrase: credentials.passphrase as string | undefined,
+						});
+					}
 				} else {
-					await sftp.connect({
-						host: credentials.host as string,
-						port: credentials.port as number,
-						username: credentials.username as string,
-						password: credentials.password as string,
-					});
+					if (setAlgorithm) {
+						await sftp.connect({
+							host: credentials.host as string,
+							port: credentials.port as number,
+							username: credentials.username as string,
+							password: credentials.password as string,
+							algorithms,
+						});
+					} else {
+						await sftp.connect({
+							host: credentials.host as string,
+							port: credentials.port as number,
+							username: credentials.username as string,
+							password: credentials.password as string,
+						});
+					}
 				}
 			} else {
 				ftp = new ftpClient();
